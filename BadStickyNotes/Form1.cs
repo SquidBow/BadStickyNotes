@@ -45,12 +45,15 @@ public partial class Form1 : Form
 
     private void NewNoteButton_Click(object sender, EventArgs e)
     {
+        RenderNotes(118);
+        
         //Create new TextBox with required parameters
         TextBox newNote = new TextBox();
 
         newNote.Multiline = true;
         newNote.Location = new Point(NewNoteButton.Location.X, NewNoteButton.Location.Y + NewNoteButton.Height + 10);
-        newNote.Size = new Size(322, 30);
+        newNote.Size = new Size(322, 28);
+        newNote.Tag = "note";
 
         //Connect to function that will add the note and remove the TextBox
         newNote.Leave += NewNote_Leave;
@@ -84,10 +87,16 @@ public partial class Form1 : Form
         this.ActiveControl = null;
     }
 
-    private void RenderNotes()
+    private void RenderNotes(int offset = 85)
     {
-        //How far down to create each node
-        int offset = 85;
+        var removeNotes = this.Controls.OfType<TextBox>()
+            .Where(textBox => textBox.Tag as string == "note")
+            .ToList();
+
+        foreach (var note in removeNotes)
+        {
+            this.Controls.Remove(note);
+        }
 
         for (int i = notes.Count - 1; i > -1; i--)
         {
@@ -98,23 +107,24 @@ public partial class Form1 : Form
             note.Multiline = true;
             note.Text = noteText;
             note.WordWrap = true;
+            note.Tag = "note";
 
             //note.Size = new Size(322,100);
             note.Location = new Point(12, offset);
 
             int noteWidth = 322;
             
-            Size requiredSize = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), TextFormatFlags.WordBreak);
+            int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), TextFormatFlags.WordBreak).Height + 7;
 
-            if (requiredSize.Height % 28 != 0)
+            /*if (requiredSize.Height % 28 != 0)
             {
                 //Round to the nearest 28 units
                 requiredSize.Height = (requiredSize.Height / 28) * 28 + 28;
-            }
+            }*/
+            
+            offset += requiredHeight + 3;
 
-            offset += requiredSize.Height + 5;
-
-            note.Size = new Size(322, requiredSize.Height);
+            note.Size = new Size(noteWidth, requiredHeight);
 
             this.Controls.Add(note);
         }
