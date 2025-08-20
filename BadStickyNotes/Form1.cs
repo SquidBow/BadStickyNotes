@@ -55,6 +55,8 @@ public partial class Form1 : Form
         newNote.Size = new Size(322, 28);
         newNote.Tag = "note";
 
+        newNote.TextChanged += updateHeightOnTextChanged;
+
         //Connect to function that will add the note and remove the TextBox
         newNote.Leave += NewNote_Leave;
         
@@ -114,13 +116,18 @@ public partial class Form1 : Form
 
             int noteWidth = 322;
             
-            int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), TextFormatFlags.WordBreak).Height + 7;
+            int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(noteWidth, 0), TextFormatFlags.WordBreak).Height + 8;
 
             /*if (requiredSize.Height % 28 != 0)
             {
                 //Round to the nearest 28 units
                 requiredSize.Height = (requiredSize.Height / 28) * 28 + 28;
             }*/
+
+            if (requiredHeight < 28)
+            {
+                requiredHeight = 28;
+            }
             
             offset += requiredHeight + 3;
 
@@ -128,6 +135,24 @@ public partial class Form1 : Form
 
             this.Controls.Add(note);
         }
-        
+    }
+
+    private void updateHeightOnTextChanged(object sender, EventArgs e)
+    {
+        var note = (TextBox)sender;
+        var noteText = note.Text;
+        int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), TextFormatFlags.WordBreak)
+            .Height + 8;
+
+        if (requiredHeight < 28)
+        {
+            requiredHeight = 28;
+        }
+
+        if (note.Height != requiredHeight)
+        {
+            note.Height = requiredHeight;
+            RenderNotes(85 + requiredHeight);
+        }
     }
 }
