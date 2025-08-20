@@ -62,6 +62,7 @@ public partial class Form1 : Form
         
         //Add it
         this.Controls.Add(newNote);
+        newNote.Focus();
     }
 
     private void NewNote_Leave(object sender, EventArgs e)
@@ -72,10 +73,13 @@ public partial class Form1 : Form
         string newNote = textBox.Text;
         
         //Add the text to all notes
-        notes.Add(newNote);
         
         //Save the notes
-        SaveNotes();
+        if (newNote != "")
+        {
+            notes.Add(newNote);
+            SaveNotes();
+        }
         
         //Render all the notes
         RenderNotes();
@@ -141,7 +145,9 @@ public partial class Form1 : Form
     {
         var note = (TextBox)sender;
         var noteText = note.Text;
-        int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), TextFormatFlags.WordBreak)
+        TextFormatFlags flags = TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl;
+        
+        int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), flags)
             .Height + 8;
 
         if (requiredHeight < 28)
@@ -152,7 +158,20 @@ public partial class Form1 : Form
         if (note.Height != requiredHeight)
         {
             note.Height = requiredHeight;
-            RenderNotes(85 + requiredHeight);
+            updateHeight();
+        }
+    }
+
+    private void updateHeight()
+    {
+        var updateNotes = this.Controls.OfType<TextBox>()
+            .Where(note => note.Tag as string == "note")
+            .OrderBy(note => note.Top)
+            .ToList();
+
+        foreach (var note in updateNotes.Skip(1))
+        {
+            note.Location = new Point(note.Location.X, note.Location.Y + 28);
         }
     }
 }
