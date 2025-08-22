@@ -53,7 +53,6 @@ public partial class Form1 : Form
         newNote.Multiline = true;
         newNote.Location = new Point(NewNoteButton.Location.X, NewNoteButton.Location.Y + NewNoteButton.Height + 10);
         newNote.Size = new Size(322, 28);
-        newNote.Tag = "note";
 
         newNote.TextChanged += updateHeightOnTextChanged;
 
@@ -96,7 +95,7 @@ public partial class Form1 : Form
     private void RenderNotes(int offset = 85)
     {
         var removeNotes = this.Controls.OfType<TextBox>()
-            .Where(textBox => textBox.Tag as string == "note")
+            .Where(textBox => textBox.Tag is int)
             .ToList();
 
         foreach (var note in removeNotes)
@@ -113,14 +112,17 @@ public partial class Form1 : Form
             note.Multiline = true;
             note.Text = noteText;
             note.WordWrap = true;
-            note.Tag = "note";
+            note.Tag = i;
+            note.TextChanged += updateHeightOnTextChanged;
+            note.Leave += updateNoteInTheList;
 
             //note.Size = new Size(322,100);
             note.Location = new Point(12, offset);
 
-            int noteWidth = 322;
-            
-            int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(noteWidth, 0), TextFormatFlags.WordBreak).Height + 8;
+            TextFormatFlags flags = TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl;
+        
+            int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(318, 0), flags)
+                .Height + 8;
 
             /*if (requiredSize.Height % 28 != 0)
             {
@@ -135,7 +137,7 @@ public partial class Form1 : Form
             
             offset += requiredHeight + 3;
 
-            note.Size = new Size(noteWidth, requiredHeight);
+            note.Size = new Size(322, requiredHeight);
 
             this.Controls.Add(note);
         }
@@ -147,7 +149,7 @@ public partial class Form1 : Form
         var noteText = note.Text;
         TextFormatFlags flags = TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl;
         
-        int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(322, 0), flags)
+        int requiredHeight = TextRenderer.MeasureText(noteText, note.Font, new Size(318, 0), flags)
             .Height + 8;
 
         if (requiredHeight < 28)
@@ -158,20 +160,39 @@ public partial class Form1 : Form
         if (note.Height != requiredHeight)
         {
             note.Height = requiredHeight;
-            updateHeight();
+            
+            UpdateNotePositions();
         }
     }
 
-    private void updateHeight()
+    private void UpdateNotePositions()
     {
-        var updateNotes = this.Controls.OfType<TextBox>()
-            .Where(note => note.Tag as string == "note")
-            .OrderBy(note => note.Top)
-            .ToList();
+        // 1. Get all the note TextBoxes that are currently on the form
+        var notesOnScreen = this.Controls.OfType<TextBox>()
+                                       .Where(tb => tb.Tag is int || (tb.Tag == null && tb.Focused)) // Find all saved notes plus the new note if it's focused
+                                       .OrderBy(tb => tb.Top)
+                                       .ToList();
 
-        foreach (var note in updateNotes.Skip(1))
+        // 2. Set the starting Y position
+        int currentY = 85; 
+
+        // 3. Loop through the notes and set their Top position one after another
+        foreach (var note in notesOnScreen)
         {
-            note.Location = new Point(note.Location.X, note.Location.Y + 28);
+            note.Top = currentY;
+            currentY += note.Height + 3; // Update the Y for the next note
         }
+    }
+
+    private void updateNoteInTheList(object sender, EventArgs e)
+    {
+        TextBox editNote = (TextBox)sender;
+
+        int noteId = (int)editNote.Tag;
+
+        notes[noteId] = editNote.Text;
+        
+        SaveNotes();
+        RenderNotes();
     }
 }
